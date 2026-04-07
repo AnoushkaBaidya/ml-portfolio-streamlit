@@ -20,7 +20,7 @@ from sklearn.metrics import (
 from src.projects.churn.data import RANDOM_STATE
 
 
-@st.cache_data
+@st.cache_resource
 def train_churn_models(X_train, y_train, use_smote: bool = False) -> dict:
     """
     Train churn models, optionally applying SMOTE before fitting.
@@ -30,7 +30,9 @@ def train_churn_models(X_train, y_train, use_smote: bool = False) -> dict:
 
     if use_smote:
         smote = SMOTE(random_state=RANDOM_STATE)
-        X_train_current, y_train_current = smote.fit_resample(X_train_current, y_train_current)
+        X_train_current, y_train_current = smote.fit_resample(
+            X_train_current, y_train_current
+        )
 
     models = {
         "Logistic Regression": LogisticRegression(
@@ -57,13 +59,16 @@ def train_churn_models(X_train, y_train, use_smote: bool = False) -> dict:
 
 
 @st.cache_data
-def evaluate_churn_models(models: dict, X_test, y_test, threshold: float = 0.5) -> pd.DataFrame:
+def evaluate_churn_models(_models: dict, X_test, y_test, threshold: float = 0.5) -> pd.DataFrame:
     """
     Evaluate churn models at a chosen decision threshold.
+
+    The models argument is prefixed with an underscore so Streamlit
+    excludes it from cache hashing.
     """
     rows = []
 
-    for model_name, model in models.items():
+    for model_name, model in _models.items():
         probabilities = model.predict_proba(X_test)[:, 1]
         predictions = (probabilities >= threshold).astype(int)
 
@@ -71,8 +76,12 @@ def evaluate_churn_models(models: dict, X_test, y_test, threshold: float = 0.5) 
             {
                 "Model": model_name,
                 "Accuracy": round(accuracy_score(y_test, predictions), 4),
-                "Precision": round(precision_score(y_test, predictions, zero_division=0), 4),
-                "Recall": round(recall_score(y_test, predictions, zero_division=0), 4),
+                "Precision": round(
+                    precision_score(y_test, predictions, zero_division=0), 4
+                ),
+                "Recall": round(
+                    recall_score(y_test, predictions, zero_division=0), 4
+                ),
                 "F1": round(f1_score(y_test, predictions, zero_division=0), 4),
                 "ROC-AUC": round(roc_auc_score(y_test, probabilities), 4),
             }

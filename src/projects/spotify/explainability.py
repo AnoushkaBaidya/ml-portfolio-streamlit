@@ -29,11 +29,14 @@ def get_best_tree_model(results: dict) -> tuple[str, object]:
 
 
 @st.cache_data
-def compute_spotify_shap_values(model, X_test):
+def compute_spotify_shap_values(_model, X_test):
     """
     Compute SHAP values for a fitted tree-based model.
+
+    The model argument is prefixed with an underscore so Streamlit
+    will exclude it from cache hashing.
     """
-    explainer = shap.TreeExplainer(model)
+    explainer = shap.TreeExplainer(_model)
     shap_values = explainer.shap_values(X_test)
     return shap_values
 
