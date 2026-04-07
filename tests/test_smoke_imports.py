@@ -1,9 +1,5 @@
-
 """
 Basic smoke tests to confirm that core modules import successfully.
-
-These tests are intentionally minimal at this stage. Their purpose is
-to catch package or path issues early before project logic is added.
 """
 
 
@@ -17,3 +13,15 @@ def test_import_theme():
     from src.ui.theme import apply_app_theme
 
     assert callable(apply_app_theme)
+
+
+def test_import_diabetes_page():
+    from src.projects.diabetes.page import render_diabetes_page
+
+    assert callable(render_diabetes_page)
+
+
+def test_import_diabetes_loader():
+    from src.projects.diabetes.data import load_diabetes_data
+
+    assert callable(load_diabetes_data)

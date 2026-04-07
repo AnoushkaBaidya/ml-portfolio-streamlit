@@ -1,11 +1,15 @@
+"""
+Streamlit page entry point for the diabetes prediction project.
+"""
+
 import streamlit as st
-from src.ui.layout import render_page_header
 
-st.set_page_config(page_title="Diabetes Prediction", page_icon="🩺", layout="wide")
+from src.projects.diabetes.page import render_diabetes_page
 
-render_page_header(
-    title="🩺 Diabetes Prediction",
-    subtitle="This page will contain the modularized diabetes classification project.",
+st.set_page_config(
+    page_title="Diabetes Prediction",
+    page_icon="🩺",
+    layout="wide",
 )
 
-st.info("Placeholder page created successfully. Next, we will migrate the real diabetes app here.")
+render_diabetes_page()
