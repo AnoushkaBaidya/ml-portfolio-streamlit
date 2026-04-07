@@ -1,0 +1,14 @@
+{
+    "project_name": "churn",
+    "version": "v1",
+    "random_state": 42,
+    "test_size": 0.2,
+    "candidate_models": [
+      "Logistic Regression",
+      "Random Forest",
+      "Gradient Boosting"
+    ],
+    "selection_metric": "ROC-AUC",
+    "use_smote_for_production": true,
+    "default_threshold": 0.5
+  }

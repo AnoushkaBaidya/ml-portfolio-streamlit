@@ -11,3 +11,4 @@ imbalanced-learn
 kagglehub
 spotipy
 pytest
+joblib
