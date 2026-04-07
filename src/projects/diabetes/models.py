@@ -6,7 +6,8 @@ This module contains:
 - scaling comparisons
 - model benchmarking
 - hyperparameter tuning
-- live prediction helper logic
+- offline best-model selection utilities
+- exploratory runtime helpers for UI tabs
 
 This module does NOT render Streamlit UI directly.
 """
@@ -34,6 +35,36 @@ def get_diabetes_models() -> dict:
         "SVM": SVC(probability=True, random_state=42),
         "Random Forest": RandomForestClassifier(n_estimators=100, random_state=42),
         "Gradient Boosting": GradientBoostingClassifier(n_estimators=100, random_state=42),
+    }
+
+
+def get_diabetes_training_grids() -> dict:
+    """
+    Return model objects and hyperparameter grids used for offline training.
+    """
+    return {
+        "Logistic Regression": {
+            "model": LogisticRegression(max_iter=1000, random_state=42),
+            "params": {"C": [0.01, 0.1, 1, 10]},
+        },
+        "SVM": {
+            "model": SVC(probability=True, random_state=42),
+            "params": {"C": [0.1, 1, 10], "kernel": ["rbf", "linear"]},
+        },
+        "Random Forest": {
+            "model": RandomForestClassifier(random_state=42),
+            "params": {
+                "n_estimators": [50, 100, 200],
+                "max_depth": [3, 5, None],
+            },
+        },
+        "Gradient Boosting": {
+            "model": GradientBoostingClassifier(random_state=42),
+            "params": {
+                "n_estimators": [50, 100, 200],
+                "learning_rate": [0.01, 0.1, 0.2],
+            },
+        },
     }
 
 
@@ -158,31 +189,7 @@ def run_diabetes_grid_search(
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
 
-    grids = {
-        "Logistic Regression": {
-            "model": LogisticRegression(max_iter=1000, random_state=42),
-            "params": {"C": [0.01, 0.1, 1, 10]},
-        },
-        "SVM": {
-            "model": SVC(probability=True, random_state=42),
-            "params": {"C": [0.1, 1, 10], "kernel": ["rbf", "linear"]},
-        },
-        "Random Forest": {
-            "model": RandomForestClassifier(random_state=42),
-            "params": {
-                "n_estimators": [50, 100, 200],
-                "max_depth": [3, 5, None],
-            },
-        },
-        "Gradient Boosting": {
-            "model": GradientBoostingClassifier(random_state=42),
-            "params": {
-                "n_estimators": [50, 100, 200],
-                "learning_rate": [0.01, 0.1, 0.2],
-            },
-        },
-    }
-
+    grids = get_diabetes_training_grids()
     config = grids[model_name]
 
     search = GridSearchCV(
@@ -235,9 +242,10 @@ def predict_diabetes_outcome(
     patient_features,
 ) -> dict:
     """
-    Predict a patient's diabetes outcome using a Random Forest model.
+    Exploratory runtime prediction helper.
 
-    This mirrors the behavior of the original uploaded app.
+    This is retained for educational comparison purposes, but production
+    inference should use the artifact-backed inference module instead.
     """
     scaler = StandardScaler()
     scaler.fit(X_train)
@@ -254,3 +262,84 @@ def predict_diabetes_outcome(
         "prediction": int(prediction),
         "probabilities": probabilities,
     }
+
+
+def train_best_diabetes_model(
+    X_train,
+    X_test,
+    y_train,
+    y_test,
+    selection_metric: str = "ROC-AUC",
+) -> dict:
+    """
+    Train and select the best diabetes model offline using GridSearchCV.
+
+    Returns
+    -------
+    dict
+        {
+            "model_name": ...,
+            "model": fitted_best_model,
+            "scaler": fitted_scaler,
+            "best_params": ...,
+            "test_metrics": ...,
+            "leaderboard": ...
+        }
+    """
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
+
+    grids = get_diabetes_training_grids()
+    leaderboard_rows = []
+    best_package = None
+    best_score = float("-inf")
+
+    for model_name, config in grids.items():
+        search = GridSearchCV(
+            estimator=config["model"],
+            param_grid=config["params"],
+            cv=5,
+            scoring="roc_auc",
+            n_jobs=-1,
+        )
+        search.fit(X_train_scaled, y_train)
+
+        best_model = search.best_estimator_
+        predictions = best_model.predict(X_test_scaled)
+        probabilities = best_model.predict_proba(X_test_scaled)[:, 1]
+
+        metrics = {
+            "Accuracy": round(accuracy_score(y_test, predictions), 4),
+            "F1": round(f1_score(y_test, predictions), 4),
+            "ROC-AUC": round(roc_auc_score(y_test, probabilities), 4),
+        }
+
+        leaderboard_rows.append(
+            {
+                "Model": model_name,
+                "Best Params": search.best_params_,
+                "Accuracy": metrics["Accuracy"],
+                "F1": metrics["F1"],
+                "ROC-AUC": metrics["ROC-AUC"],
+            }
+        )
+
+        score = metrics.get(selection_metric, metrics["ROC-AUC"])
+        if score > best_score:
+            best_score = score
+            best_package = {
+                "model_name": model_name,
+                "model": best_model,
+                "scaler": scaler,
+                "best_params": search.best_params_,
+                "test_metrics": metrics,
+            }
+
+    leaderboard_df = pd.DataFrame(leaderboard_rows).sort_values(
+        by=selection_metric,
+        ascending=False,
+    )
+
+    best_package["leaderboard"] = leaderboard_df
+    return best_package

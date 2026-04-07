@@ -1,22 +1,26 @@
 """
 Streamlit page renderer for the diabetes prediction project.
 
-This module is responsible only for rendering the UI. Model logic,
-plotting helpers, and dataset loading live in separate modules.
+This page preserves the interactive educational workflow while also
+adding production-style artifact-backed inference and model details.
 """
 
 from __future__ import annotations
 
-import numpy as np
+import pandas as pd
 import streamlit as st
 
 from src.projects.diabetes.data import FEATURE_COLS, load_diabetes_data
+from src.projects.diabetes.inference import (
+    build_diabetes_input_payload,
+    load_diabetes_production_bundle,
+    predict_with_diabetes_artifact,
+)
 from src.projects.diabetes.models import (
     compare_diabetes_models,
     evaluate_scaling_strategies,
     fit_models_for_visuals,
     get_diabetes_models,
-    predict_diabetes_outcome,
     run_diabetes_grid_search,
     split_diabetes_data,
 )
@@ -26,6 +30,11 @@ from src.projects.diabetes.plots import (
     plot_model_comparison,
     plot_roc_curves,
     plot_scaling_comparison,
+)
+from src.ui.components import (
+    render_info_card,
+    render_key_value_rows,
+    render_notes_card,
 )
 from src.ui.layout import render_page_header
 
@@ -38,26 +47,23 @@ def render_diabetes_page() -> None:
         title="🩺 Diabetes Prediction – Model Comparison",
         subtitle=(
             "A complete classification workflow covering data exploration, "
-            "feature scaling, model benchmarking, hyperparameter tuning, and live prediction."
+            "feature scaling, model benchmarking, hyperparameter tuning, and production inference."
         ),
     )
 
     st.markdown(
         """
-        This interactive project demonstrates a complete supervised learning pipeline
-        using a diabetes prediction use case.
+        This project now supports **two complementary modes**:
 
-        **You will explore:**
-        - how feature scaling changes model performance
-        - how multiple classification models compare
-        - how GridSearchCV improves a selected model
-        - how to interpret evaluation metrics like F1 and ROC-AUC
-        - how to generate a live patient-level prediction
+        - **Interactive ML exploration** for learning and experimentation
+        - **Production-style inference** using saved model artifacts
+
+        This keeps the app educational while also demonstrating real ML deployment discipline.
         """
     )
 
-    df, data_source_label = load_diabetes_data()
-    st.info(data_source_label)
+    df, _ = load_diabetes_data()
+    
 
     st.sidebar.header("⚙️ Diabetes Settings")
     test_size = st.sidebar.slider(
@@ -82,17 +88,18 @@ def render_diabetes_page() -> None:
         random_state=int(random_state),
     )
 
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(
+    tabs = st.tabs(
         [
             "📊 Data Overview",
             "⚖️ Feature Scaling",
             "🤖 Model Comparison",
             "🔧 Hyperparameter Tuning",
             "🔮 Make a Prediction",
+            "📦 Production Model Details",
         ]
     )
 
-    with tab1:
+    with tabs[0]:
         st.subheader("Dataset at a Glance")
 
         col1, col2 = st.columns(2)
@@ -115,7 +122,7 @@ def render_diabetes_page() -> None:
         st.subheader("Feature Correlations")
         st.pyplot(plot_diabetes_correlation_heatmap(df))
 
-    with tab2:
+    with tabs[1]:
         st.subheader("How Feature Scaling Affects Logistic Regression")
         st.markdown(
             """
@@ -132,7 +139,7 @@ def render_diabetes_page() -> None:
         st.dataframe(scaling_df.set_index("Scaling"), use_container_width=True)
         st.pyplot(plot_scaling_comparison(scaling_df))
 
-    with tab3:
+    with tabs[2]:
         st.subheader("Side-by-Side Model Comparison")
         st.markdown(
             "All models below are trained on standardized features and evaluated on the held-out test set."
@@ -155,12 +162,14 @@ def render_diabetes_page() -> None:
         st.subheader("ROC Curves")
         st.pyplot(plot_roc_curves(X_test_scaled, y_test, fitted_models))
 
-    with tab4:
+    with tabs[3]:
         st.subheader("Hyperparameter Tuning with GridSearchCV")
         st.markdown(
             """
-            Select a model below and run a 5-fold cross-validated grid search
-            optimized for ROC-AUC.
+            This tab remains interactive and educational.
+
+            It lets you explore how different model families perform when tuned,
+            but it does **not** define the production inference artifact directly.
             """
         )
 
@@ -186,12 +195,14 @@ def render_diabetes_page() -> None:
             )
             st.dataframe(grid_search_results["cv_results"], use_container_width=True)
 
-    with tab5:
-        st.subheader("Enter Patient Features")
+    with tabs[4]:
+        st.subheader("Interactive Prediction Form")
         st.markdown(
             """
-            Adjust the sliders below and click **Predict**.
-            The prediction uses a Random Forest model trained on the training set.
+            This form uses the **saved production model artifact** instead of
+            retraining at runtime.
+
+            The UI remains interactive, but the prediction path is now production-style.
             """
         )
 
@@ -210,31 +221,131 @@ def render_diabetes_page() -> None:
             age = st.slider("Age", 21, 81, 33)
 
         if st.button("Predict", key="diabetes_predict_button"):
-            patient_features = np.array(
-                [[
-                    pregnancies,
-                    glucose,
-                    blood_pressure,
-                    skin_thickness,
-                    insulin,
-                    bmi,
-                    dpf,
-                    age,
-                ]]
+            input_payload = build_diabetes_input_payload(
+                pregnancies=pregnancies,
+                glucose=glucose,
+                blood_pressure=blood_pressure,
+                skin_thickness=skin_thickness,
+                insulin=insulin,
+                bmi=bmi,
+                dpf=dpf,
+                age=age,
             )
 
-            result = predict_diabetes_outcome(
-                X_train=X_train,
-                y_train=y_train,
-                patient_features=patient_features,
+            try:
+                result = predict_with_diabetes_artifact(input_payload=input_payload)
+                prediction = result["prediction"]
+                probabilities = result["probabilities"]
+
+                st.divider()
+                st.caption(
+                    f"Using production model **{result['model_name']}** · Version **{result['version']}**"
+                )
+
+                if prediction == 1:
+                    st.error(f"⚠️ **Diabetic** — model confidence: {probabilities[1]:.1%}")
+                else:
+                    st.success(f"✅ **Non-diabetic** — model confidence: {probabilities[0]:.1%}")
+
+            except FileNotFoundError:
+                st.error(
+                    "No production artifact found yet. Run the offline diabetes training pipeline first."
+                )
+            except Exception as exc:
+                st.error(f"Production inference failed: {exc}")
+
+    with tabs[5]:
+        st.subheader("Production Model Details")
+
+        try:
+            bundle = load_diabetes_production_bundle()
+            model_card = bundle["model_card"]
+            metrics = bundle["metrics"]
+            training_config = bundle["training_config"]
+
+            top1, top2, top3, top4 = st.columns(4)
+
+            with top1:
+                render_info_card(
+                    title="Artifact Version",
+                    value=str(bundle["version"]),
+                    subtitle="Current production bundle",
+                )
+
+            with top2:
+                render_info_card(
+                    title="Production Model",
+                    value=str(model_card.get("model_name", "N/A")),
+                    subtitle="Selected best-fit model",
+                )
+
+            with top3:
+                render_info_card(
+                    title="Selection Metric",
+                    value=str(training_config.get("selection_metric", "N/A")),
+                    subtitle="Metric used for selection",
+                )
+
+            with top4:
+                created_at = model_card.get("created_at_utc", "N/A")
+                render_info_card(
+                    title="Trained At",
+                    value=created_at[:10] if created_at != "N/A" else "N/A",
+                    subtitle="UTC training date",
+                )
+
+            st.markdown("### Validation Metrics")
+            metric_col1, metric_col2, metric_col3 = st.columns(3)
+
+            with metric_col1:
+                render_info_card(
+                    title="Accuracy",
+                    value=str(metrics.get("Accuracy", "N/A")),
+                )
+
+            with metric_col2:
+                render_info_card(
+                    title="F1 Score",
+                    value=str(metrics.get("F1", "N/A")),
+                )
+
+            with metric_col3:
+                render_info_card(
+                    title="ROC-AUC",
+                    value=str(metrics.get("ROC-AUC", "N/A")),
+                )
+
+            summary_items = [
+                ("Model Name", str(model_card.get("model_name", "N/A"))),
+                ("Version", str(model_card.get("version", "N/A"))),
+                ("Selection Metric", str(training_config.get("selection_metric", "N/A"))),
+                ("Test Size", str(training_config.get("test_size", "N/A"))),
+                ("Random State", str(training_config.get("random_state", "N/A"))),
+            ]
+
+            st.markdown("### Production Summary")
+            render_key_value_rows(summary_items, columns=2)
+
+            hyperparameter_items = [
+                (str(key), str(value))
+                for key, value in model_card.get("hyperparameters", {}).items()
+            ]
+
+            if hyperparameter_items:
+                st.markdown("### Selected Hyperparameters")
+                render_key_value_rows(hyperparameter_items, columns=2)
+
+            notes = model_card.get("notes", "")
+            if notes:
+                st.markdown("### Notes")
+                render_notes_card(
+                    title="Model Notes",
+                    text=notes,
+                )
+
+        except FileNotFoundError:
+            st.warning(
+                "No production artifact is available yet. Run the diabetes offline training pipeline first."
             )
-
-            prediction = result["prediction"]
-            probabilities = result["probabilities"]
-
-            st.divider()
-
-            if prediction == 1:
-                st.error(f"⚠️ **Diabetic** — model confidence: {probabilities[1]:.1%}")
-            else:
-                st.success(f"✅ **Non-diabetic** — model confidence: {probabilities[0]:.1%}")
+        except Exception as exc:
+            st.error(f"Failed to load production model details: {exc}")
