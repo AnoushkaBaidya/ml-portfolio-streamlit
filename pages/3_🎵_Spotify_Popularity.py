@@ -1,11 +1,15 @@
+"""
+Streamlit page entry point for the Spotify popularity project.
+"""
+
 import streamlit as st
-from src.ui.layout import render_page_header
 
-st.set_page_config(page_title="Spotify Popularity", page_icon="🎵", layout="wide")
+from src.projects.spotify.page import render_spotify_page
 
-render_page_header(
-    title="🎵 Spotify Popularity Prediction",
-    subtitle="This page will contain the modularized Spotify regression project.",
+st.set_page_config(
+    page_title="Spotify Popularity",
+    page_icon="🎵",
+    layout="wide",
 )
 
-st.info("Placeholder page created successfully. Next, we will migrate the real Spotify app here.")
+render_spotify_page()

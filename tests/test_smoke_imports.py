@@ -37,3 +37,15 @@ def test_import_netflix_loader():
     from src.projects.netflix.data import load_netflix_data
 
     assert callable(load_netflix_data)
+
+
+def test_import_spotify_page():
+    from src.projects.spotify.page import render_spotify_page
+
+    assert callable(render_spotify_page)
+
+
+def test_import_spotify_loader():
+    from src.projects.spotify.data import load_spotify_data
+
+    assert callable(load_spotify_data)
