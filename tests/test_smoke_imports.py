@@ -49,3 +49,15 @@ def test_import_spotify_loader():
     from src.projects.spotify.data import load_spotify_data
 
     assert callable(load_spotify_data)
+
+
+def test_import_churn_page():
+    from src.projects.churn.page import render_churn_page
+
+    assert callable(render_churn_page)
+
+
+def test_import_churn_loader():
+    from src.projects.churn.data import load_churn_data
+
+    assert callable(load_churn_data)
