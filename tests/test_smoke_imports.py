@@ -27,6 +27,18 @@ def test_import_diabetes_loader():
     assert callable(load_diabetes_data)
 
 
+def test_import_diabetes_inference():
+    from src.projects.diabetes.inference import predict_with_diabetes_artifact
+
+    assert callable(predict_with_diabetes_artifact)
+
+
+def test_import_diabetes_training():
+    from src.projects.diabetes.train import run_diabetes_training_pipeline
+
+    assert callable(run_diabetes_training_pipeline)
+
+
 def test_import_netflix_page():
     from src.projects.netflix.page import render_netflix_page
 
@@ -37,6 +49,18 @@ def test_import_netflix_loader():
     from src.projects.netflix.data import load_netflix_data
 
     assert callable(load_netflix_data)
+
+
+def test_import_netflix_inference():
+    from src.projects.netflix.inference import assign_clusters_with_artifact
+
+    assert callable(assign_clusters_with_artifact)
+
+
+def test_import_netflix_training():
+    from src.projects.netflix.train import run_netflix_training_pipeline
+
+    assert callable(run_netflix_training_pipeline)
 
 
 def test_import_spotify_page():
