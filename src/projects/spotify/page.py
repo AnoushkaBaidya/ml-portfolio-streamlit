@@ -4,8 +4,6 @@ Streamlit page renderer for the Spotify popularity prediction project.
 
 from __future__ import annotations
 
-import numpy as np
-import pandas as pd
 import streamlit as st
 
 from src.projects.spotify.data import AUDIO_FEATURES, TARGET_COL, load_spotify_data
@@ -17,6 +15,11 @@ from src.projects.spotify.explainability import (
 from src.projects.spotify.features import (
     get_spotify_correlation_matrix,
     split_and_scale_spotify_data,
+)
+from src.projects.spotify.inference import (
+    build_spotify_input_payload,
+    load_spotify_production_bundle,
+    predict_with_spotify_artifact,
 )
 from src.projects.spotify.models import (
     build_spotify_metrics_dataframe,
@@ -31,6 +34,7 @@ from src.projects.spotify.plots import (
     plot_spotify_shap_summary,
     plot_target_correlations,
 )
+from src.ui.components import render_info_card, render_key_value_rows, render_notes_card
 from src.ui.layout import render_page_header
 
 
@@ -42,40 +46,35 @@ def render_spotify_page() -> None:
         title="🎵 Spotify Song Popularity Predictor",
         subtitle=(
             "A regression workflow covering feature analysis, model comparison, "
-            "SHAP explainability, and live popularity prediction."
+            "SHAP explainability, and production inference."
         ),
     )
 
     st.markdown(
         """
-        This interactive project demonstrates a complete regression workflow
-        using song audio features to predict popularity.
+        This project now supports **two complementary modes**:
 
-        **You will explore:**
-        - feature correlation analysis
-        - multiple regression model comparisons
-        - tree-based explainability with SHAP
-        - live track-level popularity prediction
+        - **Interactive ML exploration** for regression analysis and explainability
+        - **Production-style inference** using saved model artifacts
         """
     )
 
-    df, data_source_label = load_spotify_data()
-    st.info(data_source_label)
-
+    df, _ = load_spotify_data()
     X_train, X_test, y_train, y_test, scaler = split_and_scale_spotify_data(df)
     results = train_spotify_models(X_train, X_test, y_train, y_test)
 
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(
+    tabs = st.tabs(
         [
             "📊 Data Overview",
             "🔗 Feature Analysis",
             "🤖 Model Comparison",
             "💡 SHAP Explainability",
             "🎤 Predict Popularity",
+            "📦 Production Model Details",
         ]
     )
 
-    with tab1:
+    with tabs[0]:
         st.header("Dataset Overview")
         st.write(f"**Rows:** {len(df):,}  |  **Columns:** {len(df.columns)}")
 
@@ -88,7 +87,7 @@ def render_spotify_page() -> None:
         st.subheader("Popularity Distribution")
         st.pyplot(plot_spotify_popularity_distribution(df[TARGET_COL]))
 
-    with tab2:
+    with tabs[1]:
         st.header("Feature Correlation Analysis")
 
         corr_df = get_spotify_correlation_matrix(df)
@@ -119,7 +118,7 @@ def render_spotify_page() -> None:
         else:
             st.success("No feature pairs exceed |r| > 0.8 — multicollinearity is low.")
 
-    with tab3:
+    with tabs[2]:
         st.header("Model Comparison")
         st.markdown(
             "All models are evaluated on a held-out 20% test set using **MAE**, **RMSE**, and **R²**."
@@ -131,25 +130,14 @@ def render_spotify_page() -> None:
 
         best_model_name = metrics_df["R²"].idxmax()
         st.success(
-            f"🏆 Best model by R²: {best_model_name} "
+            f"🏆 Best exploration model by R²: {best_model_name} "
             f"(R² = {metrics_df.loc[best_model_name, 'R²']:.4f})"
         )
 
-        with st.expander("Gradient Boosting Hyperparameters Explained"):
-            st.markdown(
-                """
-                | Parameter | Description |
-                |---|---|
-                | **n_estimators** | Number of boosting rounds |
-                | **max_depth** | Maximum tree depth |
-                | **learning_rate** | Step size applied at each boosting round |
-                """
-            )
-
-    with tab4:
+    with tabs[3]:
         st.header("SHAP Feature Importance")
         st.markdown(
-            "SHAP reveals how much each feature pushes predictions upward or downward."
+            "This tab remains interactive and educational. It uses the best tree-based exploration model."
         )
 
         best_tree_name, best_tree_model = get_best_tree_model(results)
@@ -164,13 +152,13 @@ def render_spotify_page() -> None:
         mean_abs_shap, feature_names = compute_mean_absolute_shap(shap_values, AUDIO_FEATURES)
         st.pyplot(plot_spotify_mean_abs_shap(mean_abs_shap, feature_names))
 
-    with tab5:
+    with tabs[4]:
         st.header("Predict a Song's Popularity")
-        st.markdown("Adjust the inputs below to estimate song popularity.")
-
-        best_model_name = get_best_spotify_model_name(results)
-        best_model = results[best_model_name]["model"]
-        st.write(f"Using **{best_model_name}** for predictions.")
+        st.markdown(
+            """
+            This form uses the **saved production model artifact** instead of retraining at runtime.
+            """
+        )
 
         col1, col2 = st.columns(2)
 
@@ -192,36 +180,119 @@ def render_spotify_page() -> None:
             time_signature = st.selectbox("Time Signature", [3, 4, 5, 6, 7])
             explicit = st.selectbox("Explicit", [0, 1], format_func=lambda x: "No" if x == 0 else "Yes")
 
-        input_features = np.array(
-            [[
-                duration_ms,
-                explicit,
-                danceability,
-                energy,
-                key,
-                loudness,
-                mode,
-                speechiness,
-                acousticness,
-                instrumentalness,
-                liveness,
-                valence,
-                tempo,
-                time_signature,
-            ]]
-        )
-
-        input_scaled = scaler.transform(input_features)
-
         if st.button("🎶 Predict Popularity", type="primary"):
-            prediction = best_model.predict(input_scaled)[0]
-            prediction = float(np.clip(prediction, 0, 100))
+            input_payload = build_spotify_input_payload(
+                duration_ms=duration_ms,
+                explicit=explicit,
+                danceability=danceability,
+                energy=energy,
+                key=key,
+                loudness=loudness,
+                mode=mode,
+                speechiness=speechiness,
+                acousticness=acousticness,
+                instrumentalness=instrumentalness,
+                liveness=liveness,
+                valence=valence,
+                tempo=tempo,
+                time_signature=time_signature,
+            )
 
-            st.metric(label="Predicted Popularity", value=f"{prediction:.1f} / 100")
+            try:
+                result = predict_with_spotify_artifact(input_payload=input_payload)
+                prediction = result["prediction"]
 
-            if prediction >= 70:
-                st.success("🔥 This song is predicted to be a hit!")
-            elif prediction >= 40:
-                st.info("🎵 Moderate popularity expected.")
-            else:
-                st.warning("📉 This song may struggle to gain traction.")
+                st.caption(
+                    f"Using production model **{result['model_name']}** · Version **{result['version']}**"
+                )
+                st.metric(label="Predicted Popularity", value=f"{prediction:.1f} / 100")
+
+                if prediction >= 70:
+                    st.success("🔥 This song is predicted to be a hit!")
+                elif prediction >= 40:
+                    st.info("🎵 Moderate popularity expected.")
+                else:
+                    st.warning("📉 This song may struggle to gain traction.")
+
+            except FileNotFoundError:
+                st.error(
+                    "No production artifact found yet. Run the offline Spotify training pipeline first."
+                )
+            except Exception as exc:
+                st.error(f"Production inference failed: {exc}")
+
+    with tabs[5]:
+        st.subheader("Production Model Details")
+
+        try:
+            bundle = load_spotify_production_bundle()
+            model_card = bundle["model_card"]
+            metrics = bundle["metrics"]
+            training_config = bundle["training_config"]
+
+            top1, top2, top3, top4 = st.columns(4)
+
+            with top1:
+                render_info_card(
+                    title="Artifact Version",
+                    value=str(bundle["version"]),
+                    subtitle="Current production bundle",
+                )
+
+            with top2:
+                render_info_card(
+                    title="Production Model",
+                    value=str(model_card.get("model_name", "N/A")),
+                    subtitle="Selected best-fit regressor",
+                )
+
+            with top3:
+                render_info_card(
+                    title="Selection Metric",
+                    value=str(training_config.get("selection_metric", "N/A")),
+                    subtitle="Metric used for selection",
+                )
+
+            with top4:
+                created_at = model_card.get("created_at_utc", "N/A")
+                render_info_card(
+                    title="Trained At",
+                    value=created_at[:10] if created_at != "N/A" else "N/A",
+                    subtitle="UTC training date",
+                )
+
+            st.markdown("### Production Metrics")
+            metric_col1, metric_col2, metric_col3 = st.columns(3)
+
+            with metric_col1:
+                render_info_card(title="MAE", value=str(metrics.get("MAE", "N/A")))
+
+            with metric_col2:
+                render_info_card(title="RMSE", value=str(metrics.get("RMSE", "N/A")))
+
+            with metric_col3:
+                render_info_card(title="R²", value=str(metrics.get("R2", "N/A")))
+
+            summary_items = [
+                ("Model Name", str(model_card.get("model_name", "N/A"))),
+                ("Version", str(model_card.get("version", "N/A"))),
+                ("Selection Metric", str(training_config.get("selection_metric", "N/A"))),
+                ("Test Size", str(training_config.get("test_size", "N/A"))),
+                ("Random State", str(training_config.get("random_state", "N/A"))),
+            ]
+
+            st.markdown("### Production Summary")
+            render_key_value_rows(summary_items, columns=2)
+
+            notes = model_card.get("notes", "")
+            if notes:
+                st.markdown("### Notes")
+                render_notes_card(
+                    title="Model Notes",
+                    text=notes,
+                )
+
+        except FileNotFoundError:
+            st.warning("No production artifact is available yet. Run the Spotify offline training pipeline first.")
+        except Exception as exc:
+            st.error(f"Failed to load production model details: {exc}")

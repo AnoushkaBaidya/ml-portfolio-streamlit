@@ -75,6 +75,18 @@ def test_import_spotify_loader():
     assert callable(load_spotify_data)
 
 
+def test_import_spotify_inference():
+    from src.projects.spotify.inference import predict_with_spotify_artifact
+
+    assert callable(predict_with_spotify_artifact)
+
+
+def test_import_spotify_training():
+    from src.projects.spotify.train import run_spotify_training_pipeline
+
+    assert callable(run_spotify_training_pipeline)
+
+
 def test_import_churn_page():
     from src.projects.churn.page import render_churn_page
 
