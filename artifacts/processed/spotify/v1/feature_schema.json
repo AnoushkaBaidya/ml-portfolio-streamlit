@@ -1,0 +1,78 @@
+{
+  "feature_names": [
+    "duration_ms",
+    "explicit",
+    "danceability",
+    "energy",
+    "key",
+    "loudness",
+    "mode",
+    "speechiness",
+    "acousticness",
+    "instrumentalness",
+    "liveness",
+    "valence",
+    "tempo",
+    "time_signature"
+  ],
+  "target_name": "popularity",
+  "numeric_ranges": {
+    "duration_ms": [
+      60000,
+      420000
+    ],
+    "explicit": [
+      0,
+      1
+    ],
+    "danceability": [
+      0.0,
+      1.0
+    ],
+    "energy": [
+      0.0,
+      1.0
+    ],
+    "key": [
+      0,
+      11
+    ],
+    "loudness": [
+      -60.0,
+      0.0
+    ],
+    "mode": [
+      0,
+      1
+    ],
+    "speechiness": [
+      0.0,
+      1.0
+    ],
+    "acousticness": [
+      0.0,
+      1.0
+    ],
+    "instrumentalness": [
+      0.0,
+      1.0
+    ],
+    "liveness": [
+      0.0,
+      1.0
+    ],
+    "valence": [
+      0.0,
+      1.0
+    ],
+    "tempo": [
+      50.0,
+      200.0
+    ],
+    "time_signature": [
+      3,
+      7
+    ]
+  },
+  "categorical_options": {}
+}

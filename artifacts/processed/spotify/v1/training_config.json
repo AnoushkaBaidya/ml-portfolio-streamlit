@@ -1,0 +1,13 @@
+{
+  "project_name": "spotify",
+  "version": "v1",
+  "random_state": 42,
+  "test_size": 0.2,
+  "candidate_models": [
+    "Linear Regression",
+    "Random Forest",
+    "XGBoost",
+    "LightGBM"
+  ],
+  "selection_metric": "R2"
+}

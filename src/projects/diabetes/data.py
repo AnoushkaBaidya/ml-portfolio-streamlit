@@ -159,7 +159,7 @@ def load_diabetes_data() -> tuple[pd.DataFrame, str]:
     if dataset_path is not None:
         local_df = _load_from_local_csv(dataset_path)
         if local_df is not None:
-            return local_df, f"Loaded local dataset from: {dataset_path}"
+            return local_df, f"Loaded local dataset"
 
     kaggle_df = _load_from_kaggle()
     if kaggle_df is not None:

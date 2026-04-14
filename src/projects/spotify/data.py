@@ -305,7 +305,7 @@ def load_spotify_data() -> tuple[pd.DataFrame, str]:
     if dataset_path is not None:
         local_df = _load_from_local_csv(dataset_path)
         if local_df is not None:
-            return local_df, f"Loaded local dataset from: {dataset_path}"
+            return local_df, f"Loaded local dataset"
 
     api_df = _fetch_from_spotify_api()
     if api_df is not None:

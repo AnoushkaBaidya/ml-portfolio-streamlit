@@ -10,6 +10,10 @@ from imblearn.over_sampling import SMOTE
 
 from src.projects.churn.data import RANDOM_STATE, TARGET_COL, load_churn_data
 from src.projects.churn.features import engineer_churn_features, preprocess_churn_data
+from src.projects.churn.inference import (
+    load_churn_production_bundle,
+    predict_with_churn_artifact,
+)
 from src.projects.churn.models import (
     evaluate_churn_models,
     get_churn_feature_importance,
@@ -29,6 +33,7 @@ from src.projects.churn.thresholding import (
     compute_precision_recall_curve_data,
     compute_threshold_metrics,
 )
+from src.ui.components import render_info_card, render_key_value_rows, render_notes_card
 from src.ui.layout import render_page_header
 
 
@@ -40,27 +45,20 @@ def render_churn_page() -> None:
         title="📉 Telecom Customer Churn Predictor",
         subtitle=(
             "A classification workflow covering feature engineering, imbalance handling, "
-            "threshold tuning, and live churn prediction."
+            "threshold tuning, and production inference."
         ),
     )
 
     st.markdown(
         """
-        This interactive project demonstrates a complete churn-prediction workflow.
+        This project supports **two complementary modes**:
 
-        **You will explore:**
-        - raw telecom data and churn imbalance
-        - domain-driven feature engineering
-        - why accuracy alone is misleading
-        - how SMOTE improves minority-class learning
-        - how threshold tuning changes business trade-offs
-        - live churn prediction for an individual customer
+        - **Interactive ML exploration** for threshold tuning and churn analysis
+        - **Production-style inference** using saved model artifacts
         """
     )
 
-    raw_df, data_source_label = load_churn_data()
-    st.info(data_source_label)
-
+    raw_df, _ = load_churn_data()
     df = engineer_churn_features(raw_df)
     X_train, X_test, y_train, y_test, feature_names, scaler = preprocess_churn_data(df)
 
@@ -71,6 +69,7 @@ def render_churn_page() -> None:
             "⚖️ Imbalanced Data",
             "🎯 Threshold Tuning",
             "🔮 Predict Churn",
+            "📦 Production Model Details",
         ]
     )
 
@@ -171,7 +170,7 @@ def render_churn_page() -> None:
             st.dataframe(results_smote, use_container_width=True, hide_index=True)
 
         smote = SMOTE(random_state=RANDOM_STATE)
-        X_resampled, y_resampled = smote.fit_resample(X_train, y_train)
+        _, y_resampled = smote.fit_resample(X_train, y_train)
 
         st.subheader("Class Distribution Before & After SMOTE")
         st.pyplot(plot_before_after_smote(y_train, y_resampled))
@@ -181,10 +180,10 @@ def render_churn_page() -> None:
 
         st.markdown(
             """
-            Most classifiers output probabilities, not just labels.
+            This tab remains interactive and educational.
 
-            Lower thresholds increase recall and catch more churners, but also increase
-            false positives. Higher thresholds improve precision, but miss more true churners.
+            The threshold is a business decision layer on top of model probabilities.
+            Lower thresholds increase recall, while higher thresholds improve precision.
             """
         )
 
@@ -236,10 +235,11 @@ def render_churn_page() -> None:
 
     with tabs[4]:
         st.header("Predict Churn for a Customer")
-        st.markdown("Fill in the customer details below and click **Predict**.")
-
-        models_smote = train_churn_models(X_train, y_train, use_smote=True)
-        production_model = models_smote["Gradient Boosting"]
+        st.markdown(
+            """
+            This form uses the **saved production model artifact** for prediction.
+            """
+        )
 
         with st.form("predict_churn_form"):
             col1, col2, col3 = st.columns(3)
@@ -319,29 +319,115 @@ def render_churn_page() -> None:
                 ]
             )
 
-            row_encoded = pd.get_dummies(row, drop_first=True)
-            row_encoded = row_encoded.reindex(columns=feature_names, fill_value=0)
-            row_scaled = pd.DataFrame(
-                scaler.transform(row_encoded),
-                columns=feature_names,
-            )
+            try:
+                result = predict_with_churn_artifact(row_df=row)
 
-            churn_probability = production_model.predict_proba(row_scaled)[0][1]
-            label = "⚠️ **Likely to Churn**" if churn_probability >= 0.5 else "✅ **Likely to Stay**"
+                st.caption(
+                    f"Using production model **{result['model_name']}** · "
+                    f"Version **{result['version']}** · Threshold **{result['threshold']:.2f}**"
+                )
 
-            st.divider()
-            st.subheader("Prediction Result")
+                churn_probability = result["probability"]
+                label = "⚠️ **Likely to Churn**" if result["prediction"] == 1 else "✅ **Likely to Stay**"
 
-            result_col1, result_col2 = st.columns(2)
-            result_col1.metric("Churn Probability", f"{churn_probability:.1%}")
-            result_col2.markdown(f"### {label}")
+                st.divider()
+                st.subheader("Prediction Result")
 
-            if churn_probability >= 0.5:
+                result_col1, result_col2 = st.columns(2)
+                result_col1.metric("Churn Probability", f"{churn_probability:.1%}")
+                result_col2.markdown(f"### {label}")
+
+                if result["prediction"] == 1:
+                    st.error(
+                        "This customer has elevated churn risk. Consider retention outreach, "
+                        "discount offers, or dedicated support."
+                    )
+                else:
+                    st.success(
+                        "This customer appears relatively stable. Continue monitoring for changes."
+                    )
+
+            except FileNotFoundError:
                 st.error(
-                    "This customer has elevated churn risk. Consider retention outreach, "
-                    "discount offers, or dedicated support."
+                    "No production artifact found yet. Run the offline churn training pipeline first."
                 )
-            else:
-                st.success(
-                    "This customer appears relatively stable. Continue monitoring for changes."
+            except Exception as exc:
+                st.error(f"Production inference failed: {exc}")
+
+    with tabs[5]:
+        st.subheader("Production Model Details")
+
+        try:
+            bundle = load_churn_production_bundle()
+            model_card = bundle["model_card"]
+            metrics = bundle["metrics"]
+            training_config = bundle["training_config"]
+            recommended_threshold = model_card.get("hyperparameters", {}).get("recommended_threshold", "N/A")
+
+            top1, top2, top3, top4 = st.columns(4)
+
+            with top1:
+                render_info_card(
+                    title="Artifact Version",
+                    value=str(bundle["version"]),
+                    subtitle="Current production bundle",
                 )
+
+            with top2:
+                render_info_card(
+                    title="Production Model",
+                    value=str(model_card.get("model_name", "N/A")),
+                    subtitle="Selected best-fit classifier",
+                )
+
+            with top3:
+                render_info_card(
+                    title="Selection Metric",
+                    value=str(training_config.get("selection_metric", "N/A")),
+                    subtitle="Metric used for selection",
+                )
+
+            with top4:
+                render_info_card(
+                    title="Threshold",
+                    value=str(recommended_threshold),
+                    subtitle="Recommended production threshold",
+                )
+
+            st.markdown("### Production Metrics")
+            metric_col1, metric_col2, metric_col3, metric_col4, metric_col5 = st.columns(5)
+
+            with metric_col1:
+                render_info_card(title="Accuracy", value=str(metrics.get("Accuracy", "N/A")))
+            with metric_col2:
+                render_info_card(title="Precision", value=str(metrics.get("Precision", "N/A")))
+            with metric_col3:
+                render_info_card(title="Recall", value=str(metrics.get("Recall", "N/A")))
+            with metric_col4:
+                render_info_card(title="F1", value=str(metrics.get("F1", "N/A")))
+            with metric_col5:
+                render_info_card(title="ROC-AUC", value=str(metrics.get("ROC-AUC", "N/A")))
+
+            summary_items = [
+                ("Model Name", str(model_card.get("model_name", "N/A"))),
+                ("Version", str(model_card.get("version", "N/A"))),
+                ("Selection Metric", str(training_config.get("selection_metric", "N/A"))),
+                ("Test Size", str(training_config.get("test_size", "N/A"))),
+                ("Use SMOTE", str(training_config.get("use_smote_for_production", "N/A"))),
+            ]
+
+            st.markdown("### Production Summary")
+            render_key_value_rows(summary_items, columns=2)
+
+            notes = model_card.get("notes", "")
+            if notes:
+                st.markdown("### Notes")
+                render_notes_card(
+                    title="Model Notes",
+                    text=notes,
+                )
+
+        except FileNotFoundError:
+            st.warning("No production artifact is available yet. Run the offline churn training pipeline first.")
+        except Exception as exc:
+            st.error(f"Failed to load production model details: {exc}")

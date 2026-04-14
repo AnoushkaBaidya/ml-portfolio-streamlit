@@ -7,7 +7,7 @@ __pycache__/
 # Virtual environment
 .venv/
 
-# Streamlit
+# Streamlit secrets
 .streamlit/secrets.toml
 
 # OS / editor
@@ -27,9 +27,17 @@ build/
 dist/
 *.egg-info/
 
-# Local data artifacts
-artifacts/
-data/
-
 # Environment files
 .env
+
+# Ignore raw local data by default
+data/
+artifacts/raw/
+
+# Keep processed production artifacts
+!artifacts/
+!artifacts/processed/
+!artifacts/processed/**
+
+# Optional local scratch files
+*.log

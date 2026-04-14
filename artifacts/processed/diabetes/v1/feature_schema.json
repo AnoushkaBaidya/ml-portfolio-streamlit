@@ -1,0 +1,48 @@
+{
+  "feature_names": [
+    "Pregnancies",
+    "Glucose",
+    "BloodPressure",
+    "SkinThickness",
+    "Insulin",
+    "BMI",
+    "DiabetesPedigreeFunction",
+    "Age"
+  ],
+  "target_name": "Outcome",
+  "numeric_ranges": {
+    "Pregnancies": [
+      0,
+      17
+    ],
+    "Glucose": [
+      0,
+      200
+    ],
+    "BloodPressure": [
+      0,
+      122
+    ],
+    "SkinThickness": [
+      0,
+      99
+    ],
+    "Insulin": [
+      0,
+      846
+    ],
+    "BMI": [
+      0.0,
+      67.0
+    ],
+    "DiabetesPedigreeFunction": [
+      0.078,
+      2.42
+    ],
+    "Age": [
+      21,
+      81
+    ]
+  },
+  "categorical_options": {}
+}

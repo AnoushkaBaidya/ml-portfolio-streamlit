@@ -1,0 +1,23 @@
+{
+  "feature_names": [
+    "release_year",
+    "rating_encoded",
+    "duration_num",
+    "is_movie",
+    "genre_International Movies",
+    "genre_Dramas",
+    "genre_Comedies",
+    "genre_International TV Shows",
+    "genre_Documentaries",
+    "genre_Action & Adventure",
+    "genre_TV Dramas",
+    "genre_Independent Movies",
+    "genre_Children & Family Movies",
+    "genre_Romantic Movies",
+    "genre_TV Comedies",
+    "genre_Thrillers"
+  ],
+  "target_name": null,
+  "numeric_ranges": {},
+  "categorical_options": {}
+}

@@ -1,19 +1,5 @@
 """
 Main landing page for the ML Portfolio Streamlit application.
-
-This file is the top-level entry point for the entire portfolio app.
-It serves as the homepage that introduces the portfolio, explains the
-included projects, and guides recruiters or viewers to the individual
-project pages in the Streamlit sidebar.
-
-Why this file exists:
-- Streamlit uses `app.py` as the primary launch target.
-- In a multi-page application, this file acts like the "home screen."
-- We keep the landing page lightweight and focused on portfolio framing,
-  while each project page lives in the `pages/` directory.
-
-Author:
-- Your name here
 """
 
 import streamlit as st
@@ -22,9 +8,6 @@ from src.ui.theme import apply_app_theme
 from src.ui.components import render_project_card
 
 
-# ---------------------------------------------------------------------
-# Streamlit page configuration
-# ---------------------------------------------------------------------
 st.set_page_config(
     page_title="ML Portfolio",
     page_icon="🤖",
@@ -33,32 +16,27 @@ st.set_page_config(
 
 
 def main() -> None:
-    """
-    Render the landing page for the ML portfolio application.
-
-    This function is intentionally simple and presentation-focused.
-    Business logic, model training, and plotting for each project
-    are handled in their respective modules and page files.
-    """
     apply_app_theme()
 
     st.title("🤖 Machine Learning Portfolio")
     st.caption(
-        "A multi-project interactive portfolio built with Streamlit, "
-        "featuring supervised and unsupervised machine learning workflows."
+        "A production-aware, multi-project machine learning portfolio built with Streamlit."
     )
 
     st.markdown(
         """
-        Welcome to my interactive ML portfolio. This application combines four
-        end-to-end machine learning demonstrations into one deployable web app.
+        Welcome to my interactive ML portfolio. This application combines four end-to-end
+        machine learning demonstrations into one deployable web app.
 
-        The projects included are:
+        It is designed to show both:
+        - **interactive ML exploration**
+        - **production-style inference using saved artifacts**
 
-        - **Diabetes Prediction** — binary classification, model comparison, feature scaling
-        - **Netflix Clustering** — unsupervised learning, KMeans, PCA, cluster interpretation
-        - **Spotify Popularity Prediction** — regression, model benchmarking, SHAP explainability
-        - **Customer Churn Prediction** — classification, imbalance handling, threshold tuning
+        ### Included Projects
+        - **Diabetes Prediction** — classification, scaling, model benchmarking, production inference
+        - **Netflix Clustering** — KMeans, K-selection, PCA visualization, production clustering artifacts
+        - **Spotify Popularity Prediction** — regression, explainability, saved production model
+        - **Customer Churn Prediction** — imbalance handling, threshold tuning, artifact-backed scoring
 
         Use the **left sidebar** to navigate between projects.
         """
@@ -75,14 +53,14 @@ def main() -> None:
             emoji="🩺",
             title="Diabetes Prediction",
             summary=(
-                "Compare multiple classification models, study feature scaling, "
-                "evaluate ROC-AUC and F1, and make live patient-level predictions."
+                "Binary classification with feature scaling, model comparison, "
+                "hyperparameter tuning, and saved production artifacts for inference."
             ),
             skills=[
                 "Classification",
                 "Feature Scaling",
                 "Model Evaluation",
-                "Hyperparameter Tuning",
+                "Production Inference",
             ],
         )
 
@@ -90,14 +68,14 @@ def main() -> None:
             emoji="🎵",
             title="Spotify Popularity Prediction",
             summary=(
-                "Predict song popularity from audio features using regression models, "
-                "compare performance, and explain predictions with SHAP."
+                "Regression on audio features with model comparison, SHAP explainability, "
+                "and artifact-backed production scoring."
             ),
             skills=[
                 "Regression",
-                "Model Comparison",
                 "Explainability",
-                "Feature Analysis",
+                "Model Comparison",
+                "Artifact Deployment",
             ],
         )
 
@@ -106,14 +84,14 @@ def main() -> None:
             emoji="🎬",
             title="Netflix Clustering",
             summary=(
-                "Cluster Netflix titles using KMeans, determine the optimal number "
-                "of clusters, and visualize high-dimensional data with PCA."
+                "Unsupervised clustering with production-selected K, PCA visualization, "
+                "and saved clustering artifacts."
             ),
             skills=[
                 "Clustering",
                 "KMeans",
                 "PCA",
-                "Unsupervised Learning",
+                "Production Artifacts",
             ],
         )
 
@@ -121,22 +99,22 @@ def main() -> None:
             emoji="📉",
             title="Customer Churn Prediction",
             summary=(
-                "Predict telecom churn using engineered features, compare models, "
-                "handle class imbalance, and tune classification thresholds."
+                "Customer churn classification with feature engineering, imbalance handling, "
+                "threshold tuning, and saved production model scoring."
             ),
             skills=[
                 "Classification",
                 "SMOTE",
                 "Threshold Tuning",
-                "Business Metrics",
+                "Production Scoring",
             ],
         )
 
     st.divider()
 
-    st.info(
-        "This portfolio is designed for recruiter-friendly exploration: "
-        "one link, four live machine learning applications, and no local setup required."
+    st.success(
+        "This portfolio is designed to be friendly: one link, live interaction, "
+        "and production-aware ML architecture with saved model artifacts."
     )
 
 

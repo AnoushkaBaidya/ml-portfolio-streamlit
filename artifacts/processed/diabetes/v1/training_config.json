@@ -1,0 +1,14 @@
+{
+  "project_name": "diabetes",
+  "version": "v1",
+  "random_state": 42,
+  "test_size": 0.2,
+  "candidate_models": [
+    "Logistic Regression",
+    "SVM",
+    "Random Forest",
+    "Gradient Boosting"
+  ],
+  "selection_metric": "ROC-AUC",
+  "grid_search_enabled": true
+}

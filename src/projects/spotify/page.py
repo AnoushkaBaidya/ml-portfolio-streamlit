@@ -52,7 +52,7 @@ def render_spotify_page() -> None:
 
     st.markdown(
         """
-        This project now supports **two complementary modes**:
+        This project supports **two complementary modes**:
 
         - **Interactive ML exploration** for regression analysis and explainability
         - **Production-style inference** using saved model artifacts
@@ -156,7 +156,7 @@ def render_spotify_page() -> None:
         st.header("Predict a Song's Popularity")
         st.markdown(
             """
-            This form uses the **saved production model artifact** instead of retraining at runtime.
+            This form uses the **saved production model artifact** for prediction.
             """
         )
 

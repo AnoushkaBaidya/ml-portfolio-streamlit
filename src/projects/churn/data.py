@@ -185,14 +185,14 @@ def load_churn_data() -> tuple[pd.DataFrame, str]:
     Load churn data using the portfolio-wide lookup strategy.
     """
     dataset_path = find_dataset_path(
-        candidate_filenames=["churn.csv", "telco_churn.csv"],
+        candidate_filenames=["Churn.csv", "telco_churn.csv"],
         project_root=PROJECT_ROOT,
     )
 
     if dataset_path is not None:
         local_df = _load_from_local_csv(dataset_path)
         if local_df is not None:
-            return local_df, f"Loaded local dataset from: {dataset_path}"
+            return local_df, f"Loaded local dataset"
 
     kaggle_df = _load_from_kaggle()
     if kaggle_df is not None:

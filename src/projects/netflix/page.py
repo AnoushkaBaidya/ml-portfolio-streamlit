@@ -41,7 +41,7 @@ def render_netflix_page() -> None:
 
     st.markdown(
         """
-        This project now supports **two complementary modes**:
+        This project supports **two complementary modes**:
 
         - **Interactive clustering exploration** for learning and experimentation
         - **Production-style clustering inference** using saved artifacts

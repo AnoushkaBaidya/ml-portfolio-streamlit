@@ -53,10 +53,10 @@ def render_diabetes_page() -> None:
 
     st.markdown(
         """
-        This project now supports **two complementary modes**:
+        This project supports **two complementary modes**:
 
         - **Interactive ML exploration** for learning and experimentation
-        - **Production-style inference** using saved model artifacts
+        - **Production inference** using saved model artifacts
 
         This keeps the app educational while also demonstrating real ML deployment discipline.
         """
@@ -199,11 +199,7 @@ def render_diabetes_page() -> None:
         st.subheader("Interactive Prediction Form")
         st.markdown(
             """
-            This form uses the **saved production model artifact** instead of
-            retraining at runtime.
-
-            The UI remains interactive, but the prediction path is now production-style.
-            """
+            This form uses the **saved production model artifact** for prediction."""
         )
 
         col1, col2 = st.columns(2)
