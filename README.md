@@ -4,7 +4,7 @@ A multi-page machine learning portfolio application built with Streamlit.
 
 ## Live Demo
 
-[Deployed Streamlit link here after deployment.]
+https://ml-portfolio-app-zg3equ3xx4ajwxnebwl3bk.streamlit.app/
 
 ## Overview
 
